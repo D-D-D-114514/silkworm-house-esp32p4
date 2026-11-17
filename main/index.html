@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智能蚕房 · 摄像头控制台</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#141922; --panel2:#1b222e; --line:#252d3a;
+    --fg:#e6edf3; --dim:#8b98a9; --accent:#58a6ff; --ok:#3fb950;
+    --warn:#d29922; --bad:#f85149;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 20% -10%,#16202e 0%,var(--bg) 55%);
+    color:var(--fg); font:14px/1.5 -apple-system,"Segoe UI",system-ui,"Microsoft YaHei",sans-serif;
+    min-height:100vh; padding:28px 20px 40px;
+  }
+  .wrap{max-width:1240px;margin:0 auto}
+
+  header{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+  h1{font-size:19px;font-weight:600;letter-spacing:.3px}
+  h1 span{color:var(--dim);font-weight:400;font-size:13px;margin-left:8px}
+  .pill{
+    display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;
+    font-size:12px;border:1px solid var(--line);background:var(--panel);color:var(--dim)
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--bad)}
+  .dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .dot.lock{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+  .spacer{flex:1}
+
+  .grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,1fr);gap:18px}
+  @media (max-width:940px){.grid{grid-template-columns:1fr}}
+
+  .card{
+    background:linear-gradient(180deg,var(--panel) 0%,#11161e 100%);
+    border:1px solid var(--line); border-radius:16px; padding:16px;
+    box-shadow:0 10px 30px -18px #000,inset 0 1px 0 #ffffff08;
+  }
+  .card h2{font-size:12px;font-weight:600;color:var(--dim);letter-spacing:1.2px;
+    text-transform:uppercase;margin-bottom:12px}
+
+  .video{position:relative;background:#000;border-radius:12px;overflow:hidden;
+    aspect-ratio:16/9;border:1px solid var(--line)}
+  .video img{width:100%;height:100%;object-fit:contain;display:block}
+  .badge{position:absolute;top:10px;left:10px;padding:4px 9px;border-radius:7px;
+    background:#000a;backdrop-filter:blur(6px);font-size:11px;color:var(--dim);
+    border:1px solid #ffffff14}
+
+  .row{display:flex;align-items:center;justify-content:space-between;margin:0 0 6px}
+  .row label{font-size:13px;color:var(--fg)}
+  .val{font-variant-numeric:tabular-nums;font-size:13px;color:var(--accent);font-weight:600}
+  .sub{font-size:11px;color:var(--dim);margin:-2px 0 14px}
+
+  input[type=range]{
+    -webkit-appearance:none;width:100%;height:5px;border-radius:99px;outline:none;
+    background:linear-gradient(90deg,var(--accent) 0%,var(--accent) var(--p,50%),#2a3443 var(--p,50%));
+    margin:0 0 4px;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:#fff;border:3px solid var(--accent);box-shadow:0 0 10px #58a6ff66;cursor:grab;
+  }
+  input[type=range]:disabled{opacity:.45;cursor:not-allowed}
+
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  #fpsRow{grid-template-columns:repeat(5,1fr);gap:6px;margin-top:0}
+  button{
+    padding:10px 12px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--fg);font-size:13px;font-weight:500;
+    cursor:pointer;transition:.15s;
+  }
+  button:hover{border-color:#3a4658;background:#212a38}
+  button.primary{background:linear-gradient(180deg,#2563eb,#1d4ed8);border-color:#3b82f6;color:#fff}
+  button.primary:hover{filter:brightness(1.1)}
+  button.active{background:linear-gradient(180deg,#2563eb,#1d4ed8);border-color:#3b82f6;color:#fff}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+  .stat .k{font-size:11px;color:var(--dim);margin-bottom:3px}
+  .stat .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+  .stat .v small{font-size:11px;color:var(--dim);font-weight:400;margin-left:3px}
+
+  .hint{font-size:11.5px;color:var(--dim);line-height:1.7;margin-top:14px;
+    padding-top:12px;border-top:1px dashed var(--line)}
+  .hint b{color:#a9b6c7;font-weight:600}
+  code{background:#0d1219;border:1px solid var(--line);border-radius:5px;
+    padding:1px 5px;font-size:11px;color:#9dc6ff}
+
+  .grid2{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media (max-width:940px){.grid2{grid-template-columns:1fr}}
+  .envbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+  .envtitle{font-size:11px;color:var(--dim);letter-spacing:.5px;margin-bottom:6px;
+    display:flex;justify-content:space-between;align-items:center}
+  .big{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+  .big small{font-size:12px;color:var(--dim);margin-left:2px;font-weight:400}
+  .envsub{font-size:11.5px;color:var(--dim);margin-top:6px;line-height:1.6}
+  .chiplink{font-size:10px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--dim)}
+  .chiplink.ok{color:var(--ok);border-color:#1f4d2b}
+  .chiplink.bad{color:var(--bad);border-color:#5a2a2a}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 4px}
+  .chip{font-size:11.5px;padding:3px 9px;border-radius:8px;background:#0e141c;
+    border:1px solid var(--line);color:var(--dim)}
+  .chip.on{background:#12351f;border-color:#2ea043;color:#7ee2a8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>智能蚕房 · 摄像头控制台 <span>ESP32-P4 · OV5647 · 1920×1080</span></h1>
+    <div class="spacer"></div>
+    <div class="pill"><span class="dot" id="dot"></span><span id="mode">连接中…</span></div>
+    <div class="pill" id="uptime">运行 --</div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>实时画面</h2>
+      <div class="video">
+        <img id="stream" src="/stream" alt="视频流">
+        <div class="badge" id="badge">1920×1080 · MJPEG</div>
+      </div>
+      <div class="hint">
+        <b>调参提示：</b>先点「锁定」停止自动测光，再拖滑块。
+        曝光越大越亮但也更容易拖影；增益越大越亮但<b>噪点成倍增加</b>。
+        建议顺序：<b>先开补光 → 增益拉到最低 → 调曝光到顺眼</b>。
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>曝光控制</h2>
+
+      <div class="row"><label>曝光时间</label><span class="val" id="vExp">--</span></div>
+      <input type="range" id="exp" min="4" max="1195" step="1" value="700">
+      <div class="sub" id="expSub">单位：行 · 27.8µs/行</div>
+
+      <div class="row"><label>增益（ISO）</label><span class="val" id="vGain">--</span></div>
+      <input type="range" id="gain" min="16" max="1023" step="1" value="32">
+      <div class="sub">16 = 1.0x 最干净 · 1023 ≈ 64x 噪点最大</div>
+
+      <div class="row"><label>帧率</label><span class="val" id="vFps">--</span></div>
+      <div class="btns" id="fpsRow">
+        <button class="fpsbtn" data-vts="1199">30</button>
+        <button class="fpsbtn" data-vts="1798">20</button>
+        <button class="fpsbtn" data-vts="2398">15</button>
+        <button class="fpsbtn" data-vts="3597">10</button>
+        <button class="fpsbtn" data-vts="7194">5</button>
+      </div>
+      <div class="sub" style="margin-top:6px">帧率越低，曝光上限越高（噪声越低），但画面更卡</div>
+
+      <div class="row"><label>目标亮度（自动）</label><span class="val" id="vTarget">--</span></div>
+      <input type="range" id="target" min="20" max="240" step="1" value="110">
+      <div class="sub">仅自动模式生效</div>
+
+      <div class="btns">
+        <button id="btnAuto">自动测光</button>
+        <button id="btnLock" class="primary">锁定当前</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="k">实测亮度</div><div class="v" id="sMean">--</div></div>
+        <div class="stat"><div class="k">当前增益</div><div class="v" id="sGain">--</div></div>
+        <div class="stat"><div class="k">曝光时间</div><div class="v" id="sExp">--</div></div>
+        <div class="stat"><div class="k">空闲内存</div><div class="v" id="sHeap">--</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2>蚕房环境 · STM32</h2>
+    <div class="grid2">
+      <div class="envbox">
+        <div class="envtitle">箱内 <span class="chiplink" id="inValid">--</span></div>
+        <div class="big"><span id="inT">--</span><small>℃</small></div>
+        <div class="envsub">湿度 <span id="inH">--</span>% · 露点 <span id="inTd">--</span>℃ · AH <span id="inAh">--</span></div>
+      </div>
+      <div class="envbox">
+        <div class="envtitle">箱外 <span class="chiplink" id="outValid">--</span></div>
+        <div class="big"><span id="outT">--</span><small>℃</small></div>
+        <div class="envsub">湿度 <span id="outH">--</span>% · 露点 <span id="outTd">--</span>℃</div>
+      </div>
+      <div class="envbox">
+        <div class="envtitle">执行器</div>
+        <div class="chips">
+          <span class="chip" id="cCool">制冷 --</span>
+          <span class="chip" id="cHeat">加热 --</span>
+          <span class="chip" id="cHum">加湿 --</span>
+          <span class="chip" id="cLight">补光 --</span>
+          <span class="chip" id="cFan">风扇 --</span>
+        </div>
+        <div class="envsub">设定 <span id="setT">--</span>℃ / <span id="setRh">--</span>% · <span id="stmMode">--</span></div>
+      </div>
+    </div>
+    <div class="btns" style="grid-template-columns:repeat(4,1fr);margin-top:12px">
+      <button id="stmAuto">自动</button>
+      <button id="stmManual">手动</button>
+      <button id="stmDiag">自检</button>
+      <button id="stmOff" style="border-color:#5a2a2a;color:#ff9b9b">全部关闭</button>
+    </div>
+    <div class="sub" style="margin-top:10px">
+      链路 <span id="stmLink">--</span> · 已收 <span id="stmRx">0</span> 帧 · 半帧丢弃 <span id="stmHalf">0</span> 次
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2>视觉判断 · YOLO11</h2>
+    <div class="grid2">
+      <div class="envbox">
+        <div class="envtitle">蚕数 <span class="chiplink" id="aiState">--</span></div>
+        <div class="big"><span id="aiCount">--</span><small>条</small></div>
+        <div class="envsub">病蚕 <span id="aiSick">--</span> 条 · 占比 <span id="aiRatio">--</span>%</div>
+      </div>
+      <div class="envbox">
+        <div class="envtitle">异动指数</div>
+        <div class="big"><span id="aiMotion">--</span><small>/1.0</small></div>
+        <div class="envsub">置信度 <span id="aiConf">--</span> · <span id="aiAge">暂无数据</span></div>
+      </div>
+      <div class="envbox">
+        <div class="envtitle">P4 决策</div>
+        <div class="chips">
+          <span class="chip" id="aiAct">等待结果</span>
+          <span class="chip" id="aiActions">动作 0 次</span>
+        </div>
+        <div class="envsub" id="aiHint">PC 未接入 · 等待 YOLO11 推送</div>
+      </div>
+    </div>
+    <div class="btns" style="grid-template-columns:repeat(2,1fr);margin-top:12px">
+      <button id="aiOn">开启决策</button>
+      <button id="aiOff">仅记录不动作</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let dragging = false;
+
+function paint(sl){
+  const p = (sl.value - sl.min) / (sl.max - sl.min) * 100;
+  sl.style.setProperty('--p', p + '%');
+}
+['exp','gain','target'].forEach(k => {
+  const sl = $(k);
+  sl.addEventListener('input', () => { paint(sl); dragging = true; preview(sl); });
+  sl.addEventListener('change', () => {
+    dragging = false;
+    send(k + '=' + sl.value);
+  });
+});
+
+function preview(sl){
+  if (sl.id === 'exp')   $('vExp').textContent = sl.value + ' 行 (' + (sl.value * 0.0278).toFixed(1) + ' ms)';
+  if (sl.id === 'gain')  $('vGain').textContent = (sl.value / 16).toFixed(2) + 'x';
+  if (sl.id === 'target')$('vTarget').textContent = sl.value;
+}
+
+function send(q){
+  fetch('/cam?' + q).then(r => r.json()).then(apply).catch(()=>{});
+}
+
+function apply(j){
+  if (!j) return;
+  $('dot').className = 'dot ' + (j.auto ? 'on' : 'lock');
+  $('mode').textContent = j.auto ? '自动测光' : '锁定（手动）';
+  $('btnAuto').classList.toggle('active', !!j.auto);
+  $('btnLock').classList.toggle('active', !j.auto);
+  $('target').disabled = !j.auto;
+
+  $('sMean').innerHTML = j.mean + '<small>/255</small>';
+  $('sGain').innerHTML = (j.gain/16).toFixed(2) + '<small>x</small>';
+  $('sExp').innerHTML  = (j.exp * 0.0278).toFixed(1) + '<small>ms</small>';
+  $('sHeap').innerHTML = (j.heap/1024/1024).toFixed(1) + '<small>MB</small>';
+  $('expSub').textContent = '范围 4 ~ ' + j.max + ' 行 (' +
+    (j.max*0.0278).toFixed(1) + ' ms 上限) · 每行 27.8µs';
+  if (j.fps !== undefined) {
+    $('vFps').textContent = j.fps + ' fps';
+    document.querySelectorAll('.fpsbtn').forEach(b =>
+      b.classList.toggle('active', +b.dataset.vts === j.vts));
+  }
+
+  if (!dragging){
+    $('exp').max = j.max;
+    $('exp').value = j.exp;
+    $('gain').value = j.gain;
+    $('target').value = j.target;
+    ['exp','gain','target'].forEach(k => { paint($(k)); preview($(k)); });
+  }
+  if (j.up !== undefined){
+    const h = Math.floor(j.up/3600), m = Math.floor(j.up%3600/60), s = j.up%60;
+    $('uptime').textContent = '运行 ' + (h?h+'h ':'') + m + 'm ' + s + 's';
+  }
+}
+
+document.querySelectorAll('.fpsbtn').forEach(b => {
+  b.onclick = () => send('vts=' + b.dataset.vts);
+});
+
+$('btnAuto').onclick = () => send('auto=1');
+$('btnLock').onclick = () => send('auto=0');
+
+function poll(){ fetch('/cam?info=1').then(r=>r.json()).then(apply).catch(()=>{
+  $('dot').className='dot'; $('mode').textContent='离线';
+});}
+poll(); setInterval(poll, 800);
+
+function chip(el, on, text){
+  el.textContent = text;
+  el.classList.toggle('on', !!on);
+}
+
+async function pollStm(){
+  try{
+    const j = await (await fetch('/stm')).json();
+    $('stmLink').textContent = j.ok ? '在线' : '离线';
+    $('stmLink').style.color = j.ok ? 'var(--ok)' : 'var(--bad)';
+    $('stmRx').textContent = j.rx;
+    $('stmHalf').textContent = j.half;
+    $('stmMode').textContent = j.mode;
+
+    $('inT').textContent  = j.tin.toFixed(1);
+    $('inH').textContent  = j.hin.toFixed(0);
+    $('inTd').textContent = j.td_in.toFixed(1);
+    $('inAh').textContent = j.ah_in.toFixed(2);
+    $('outT').textContent = j.tout.toFixed(1);
+    $('outH').textContent = j.hout.toFixed(0);
+    $('outTd').textContent= j.td_out.toFixed(1);
+    $('setT').textContent = j.tset.toFixed(1);
+    $('setRh').textContent= j.rhset.toFixed(0);
+
+    const v = (el, ok) => { el.textContent = ok ? '有效' : '异常';
+                            el.className = 'chiplink ' + (ok ? 'ok' : 'bad'); };
+    v($('inValid'),  j.in_v);
+    v($('outValid'), j.out_v);
+
+    chip($('cCool'),  j.cool,  '制冷 ' + (j.cool ? j.cool_d + '%' : '关'));
+    chip($('cHeat'),  j.heat,  '加热 ' + (j.heat ? j.heat_d + '%' : '关'));
+    chip($('cHum'),   j.hum,   '加湿 ' + (j.hum ? '开' : '关'));
+    chip($('cLight'), j.light, '补光 ' + (j.light ? j.llevel : '关'));
+    chip($('cFan'),   j.fan || j.tfan, '风扇 ' + ((j.fan||j.tfan) ? '转' : '停'));
+  }catch(e){
+    $('stmLink').textContent = '连接失败';
+    $('stmLink').style.color = 'var(--bad)';
+  }
+}
+
+$('stmAuto').onclick   = () => fetch('/stm?mode=auto');
+$('stmManual').onclick = () => fetch('/stm?mode=manual');
+$('stmDiag').onclick   = () => fetch('/stm?diag=1');
+$('stmOff').onclick    = () => { if (confirm('确认全部关闭？')) fetch('/stm?all_off=1'); };
+
+pollStm(); setInterval(pollStm, 1000);
+
+
+/* 打开页面就把 PC 时间推给板子（板子连不上外网 NTP） */
+function syncTime(){
+  fetch('/time?epoch=' + Math.floor(Date.now() / 1000)).catch(()=>{});
+}
+syncTime();
+setInterval(syncTime, 600000);   /* 每 10 分钟校一次 */
+
+async function pollAi(){
+  try{
+    const j = await (await fetch('/ai')).json();
+    const has = j.age >= 0;
+    const live = has && j.age < 30000;
+
+    $('aiState').textContent = !has ? '未接入' : (live ? '在线' : '超时');
+    $('aiState').className   = 'chiplink ' + (!has ? '' : (live ? 'ok' : 'bad'));
+
+    if (has){
+      $('aiCount').textContent  = j.count;
+      $('aiSick').textContent   = j.sick;
+      $('aiRatio').textContent  = (j.ratio * 100).toFixed(1);
+      $('aiMotion').textContent = j.motion.toFixed(2);
+      $('aiConf').textContent   = j.conf >= 0 ? j.conf.toFixed(2) : '--';
+      $('aiAge').textContent    = j.age < 2000 ? '刚刚'
+                                  : (j.age / 1000).toFixed(1) + ' 秒前';
+    }
+
+    const act = j.last_action && j.last_action !== '-' ? j.last_action : '暂无决策';
+    $('aiAct').textContent = act;
+    $('aiAct').classList.toggle('on', act !== '暂无决策');
+    $('aiActions').textContent = '动作 ' + j.actions + ' 次';
+
+    $('aiHint').textContent = !has ? 'PC 未接入 · 等待 YOLO11 推送'
+                            : (live ? '视觉链路正常，P4 按规则表自动决策'
+                                    : '超过 30 秒没有新结果，PC 可能掉线');
+  }catch(e){
+    $('aiState').textContent = '连接失败';
+    $('aiState').className = 'chiplink bad';
+  }
+}
+
+$('aiOn').onclick  = () => fetch('/ai?enable=1');
+$('aiOff').onclick = () => fetch('/ai?enable=0');
+pollAi(); setInterval(pollAi, 1500);
+
+// 流断了自动重连
+$('stream').onerror = () => setTimeout(()=>{ $('stream').src = '/stream?t=' + Date.now(); }, 1500);
+</script>
+</body>
+</html>

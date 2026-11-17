@@ -1,0 +1,6 @@
+dependencies:
+  idf:
+    version: ">=6.0.0"
+  espressif/esp_cam_sensor: "^2.1.0"
+  # 官方 V4L2 视频组件：CSI + ISP pipeline + 硬件 JPEG 全包好
+  espressif/esp_video: ">=2.2,<3.0"

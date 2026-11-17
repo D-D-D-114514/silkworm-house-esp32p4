@@ -1,0 +1,121 @@
+menu "Smart Silkworm Configuration"
+
+    menu "Camera Configuration"
+        config CAMERA_MIPI_CSI_SCCB_SCL
+            int "SCCB I2C SCL GPIO"
+            default 8
+            help
+                GPIO number for camera SCCB (I2C) clock line.
+
+        config CAMERA_MIPI_CSI_SCCB_SDA
+            int "SCCB I2C SDA GPIO"
+            default 7
+            help
+                GPIO number for camera SCCB (I2C) data line.
+
+        config CAMERA_FRAME_WIDTH
+            int "Camera frame width"
+            default 1280
+            help
+                Width of captured frames (e.g., 1280, 800, 640).
+
+        config CAMERA_FRAME_HEIGHT
+            int "Camera frame height"
+            default 720
+            help
+                Height of captured frames (e.g., 720, 600, 480).
+
+        config CAMERA_FRAME_RATE
+            int "Camera frame rate (FPS)"
+            default 15
+            help
+                Frames per second for video capture.
+    endmenu
+
+    menu "SD Card Configuration"
+        config SD_CARD_CMD_PIN
+            int "SD Card CMD pin"
+            default 44
+
+        config SD_CARD_CLK_PIN
+            int "SD Card CLK pin"
+            default 43
+
+        config SD_CARD_D0_PIN
+            int "SD Card D0 pin"
+            default 39
+
+        config SD_CARD_D1_PIN
+            int "SD Card D1 pin"
+            default 40
+
+        config SD_CARD_D2_PIN
+            int "SD Card D2 pin"
+            default 41
+
+        config SD_CARD_D3_PIN
+            int "SD Card D3 pin"
+            default 42
+
+        config VIDEO_SEGMENT_DURATION_MIN
+            int "Video segment duration (minutes)"
+            default 30
+            help
+                Split recorded video into segments every N minutes.
+
+        config VIDEO_KEEP_HOURS
+            int "Keep recent video hours"
+            default 24
+            help
+                Delete videos older than N hours to free space.
+    endmenu
+
+    menu "UART Communication"
+        config UART_STM32_NUM
+            int "UART port number for STM32"
+            default 2
+            help
+                UART peripheral number (0, 1, 2).
+
+        config UART_STM32_TX_PIN
+            int "UART TX GPIO to STM32"
+            default 22
+
+        config UART_STM32_RX_PIN
+            int "UART RX GPIO from STM32"
+            default 21
+
+        config UART_STM32_BAUD_RATE
+            int "UART baud rate"
+            default 115200
+    endmenu
+
+    menu "Network Configuration"
+        config ETHERNET_PHY_ADDR
+            int "Ethernet PHY address"
+            default 1
+            help
+                PHY address on MDIO bus (usually 0 or 1).
+
+        config ETHERNET_MDC_GPIO
+            int "Ethernet MDC GPIO"
+            default 31
+
+        config ETHERNET_MDIO_GPIO
+            int "Ethernet MDIO GPIO"
+            default 52
+
+        config ETHERNET_PHY_RST_GPIO
+            int "Ethernet PHY reset GPIO"
+            default 51
+    endmenu
+
+    menu "Logging Configuration"
+        config LOG_INTERVAL_SEC
+            int "Log write interval (seconds)"
+            default 60
+            help
+                Write temperature/humidity log every N seconds.
+    endmenu
+
+endmenu
