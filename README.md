@@ -78,3 +78,10 @@ PC 网卡需为 `192.168.1.100/24`（板子是静态 `192.168.1.10`）。
 ## License
 
 MIT
+
+## 许可证
+
+本项目采用 [MIT License](LICENSE)。
+
+仓库内含第三方组件：ESP-IDF 及其组件（Apache-2.0）、ST HAL/CMSIS（BSD-3-Clause），
+版权归各自作者，按其原许可证分发。
